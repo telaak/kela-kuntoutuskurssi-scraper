@@ -1,22 +1,49 @@
 import dayjs from "dayjs";
 import { KurssiParser } from "./parser";
-import { writeFile } from "fs/promises";
 import axios from "axios";
 import "dotenv/config";
+import { CronJob } from "cron";
 
 const parser = new KurssiParser();
 
-parser.getCourses(dayjs(), dayjs().add(1, "years")).then(async (courses) => {
+async function iterate() {
+  const courses = await parser.getCourses(dayjs(), dayjs().add(1, "years"));
+
   for (const course of courses) {
-    // writeFile(
-    //   `./json/${course.name}-${course.id}.json`,
-    //   JSON.stringify(course, null, 2)
-    // );
-    const { patientArea, patientAreaDescription } =
-      await parser.parseCourseDetails(course.id);
-    await axios.post(
-      `http://localhost:3000/api/course?postSecret=${process.env.POST_SECRET}`,
-      { ...course, patientArea, patientAreaDescription }
-    );
+    try {
+      const { patientArea, patientAreaDescription } =
+        await parser.parseCourseDetails(course.id);
+      await axios.post(process.env.API_URL as string, {
+        ...course,
+        patientArea,
+        patientAreaDescription,
+      });
+    } catch (error) {
+      console.error(error);
+    }
   }
-});
+
+  if (!process.env.CRON) {
+    process.exit();
+  }
+}
+
+if (process.env.PARSE_ON_BOOT === "true") {
+  try {
+    iterate();
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+if (process.env.CRON) {
+  console.log(`cronjob scheduled for ${process.env.CRON}`);
+  const job = CronJob.from({
+    cronTime: process.env.CRON,
+    onTick: function () {
+      iterate();
+    },
+    start: true,
+    timeZone: "Europe/Helsinki",
+  });
+}
