@@ -18,6 +18,8 @@ export type Course = {
   startDate: Date | Dayjs;
   area: string;
   spotsAvailable: number;
+  patientArea?: string | null
+  patientAreaDescription?: string
 };
 
 export class KurssiParser {
@@ -140,6 +142,53 @@ export class KurssiParser {
       startDate,
       area,
       spotsAvailable,
+    };
+  }
+
+  getAllComments(node: HTMLParagraphElement, dom: JSDOM) {
+    const nodeIterator = dom.window.document.createNodeIterator(
+      node,
+      dom.window.NodeFilter.SHOW_COMMENT,
+      (node) => dom.window.NodeFilter.FILTER_ACCEPT
+    );
+
+    const comments = [];
+    let currentNode: Node | null;
+
+    while ((currentNode = nodeIterator.nextNode())) {
+      comments.push(currentNode);
+    }
+    return comments as Text[];
+  }
+
+  async parseCourseDetails(courseId: string) {
+    const response = await this.client.get(
+      `https://asiointi.kela.fi/kz_app/KZInternetApplication/YleiskyselyHakuUseCase?valittu=${courseId}&lang=fi`
+    );
+    const data = iconv.decode(response.data, "ISO-8859-1");
+    const jsDom = new JSDOM(data);
+    const { document } = jsDom.window;
+
+    const paragraph = document.querySelector(
+      "p:not([class])"
+    ) as HTMLParagraphElement;
+
+    const comments = this.getAllComments(paragraph, jsDom);
+
+    const anchors = paragraph.querySelectorAll("a");
+    const anchorArray = Array.from(anchors);
+
+    const areaNode = anchorArray.find((n) => n.getAttribute("href") === "#");
+
+    const areaDescriptionComment = comments.find((n) =>
+      n.data.includes("Alueet,")
+    ) as Text;
+    const areaDescription =
+      areaDescriptionComment!.nextSibling!.nextSibling!.nextSibling!.nextSibling!.nextSibling!.textContent!.trim();
+
+    return {
+      patientArea: areaNode ? areaNode!.textContent!.trim() : null,
+      patientAreaDescription: areaDescription,
     };
   }
 
