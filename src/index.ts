@@ -13,15 +13,19 @@ async function iterate() {
     try {
       const { patientArea, patientAreaDescription } =
         await parser.parseCourseDetails(course.id);
-      await axios.post(process.env.API_URL as string, {
+      const fullCourse = {
         ...course,
         patientArea,
         patientAreaDescription,
-      });
+      };
+      console.log(`parsed ${fullCourse.name} ${fullCourse.id}`);
+      await axios.post(process.env.API_URL as string, fullCourse);
     } catch (error) {
       console.error(error);
     }
   }
+
+  console.log("done");
 
   if (!process.env.CRON) {
     process.exit();
