@@ -18,8 +18,8 @@ export type Course = {
   startDate: Date | Dayjs;
   area: string;
   spotsAvailable: number;
-  patientArea?: string | null
-  patientAreaDescription?: string
+  patientArea?: string | null;
+  patientAreaDescription?: string;
 };
 
 export class KurssiParser {
@@ -36,7 +36,7 @@ export class KurssiParser {
   public courses: Course[] = [];
 
   public url =
-    "https://asiointi.kela.fi/kz_app/KZInternetApplication/YleiskyselyHakuUseCase";
+    "https://kuntoutus.kela.fi/kurssihaku/KZInternetApplication/YleiskyselyHakuUseCase";
 
   async getCourses(
     startDate: Date | Dayjs,
@@ -163,7 +163,7 @@ export class KurssiParser {
 
   async parseCourseDetails(courseId: string) {
     const response = await this.client.get(
-      `https://asiointi.kela.fi/kz_app/KZInternetApplication/YleiskyselyHakuUseCase?valittu=${courseId}&lang=fi`
+      `${this.url}?valittu=${courseId}&lang=fi`
     );
     const data = iconv.decode(response.data, "ISO-8859-1");
     const jsDom = new JSDOM(data);
