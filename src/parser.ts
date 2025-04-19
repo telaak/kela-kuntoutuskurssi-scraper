@@ -6,7 +6,6 @@ import dayjs, { Dayjs } from "dayjs";
 import customParseFormat from "dayjs/plugin/customParseFormat";
 dayjs.extend(customParseFormat);
 import { URLSearchParams } from "url";
-import iconv from "iconv-lite";
 
 export type Course = {
   id: string;
@@ -70,7 +69,7 @@ export class KurssiParser {
     params.append("yleiskysely_paikkatil", spotsAvailable);
 
     const response = await this.client.post(this.url, params);
-    const data = iconv.decode(response.data, "ISO-8859-1");
+    const data = response.data as string;
     const { document } = new JSDOM(data).window;
 
     this.courses.push(...this.parseTable(document));
@@ -86,7 +85,7 @@ export class KurssiParser {
     params.append("lang", "fi");
 
     const response = await this.client.post(this.url, params);
-    const data = iconv.decode(response.data, "ISO-8859-1");
+    const data = response.data as string;
     const { document } = new JSDOM(data).window;
 
     const parsedTable = this.parseTable(document);
@@ -165,7 +164,7 @@ export class KurssiParser {
     const response = await this.client.get(
       `${this.url}?valittu=${courseId}&lang=fi`
     );
-    const data = iconv.decode(response.data, "ISO-8859-1");
+    const data = response.data as string;
     const jsDom = new JSDOM(data);
     const { document } = jsDom.window;
 
