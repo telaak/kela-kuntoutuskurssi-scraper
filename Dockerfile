@@ -1,11 +1,11 @@
-FROM node:24-slim AS base
+FROM node:26-slim AS base
 
 WORKDIR /app
 COPY . .
 RUN npm ci
 RUN npx tsc
 
-FROM node:24-slim AS runner
+FROM node:26-slim AS runner
 WORKDIR /app
 COPY --from=base ./app/dist ./dist
 COPY package*.json ./
